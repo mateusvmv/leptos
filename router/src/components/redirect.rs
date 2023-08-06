@@ -1,6 +1,6 @@
 use crate::{use_navigate, use_resolved_path, NavigateOptions};
 use leptos::{
-    component, provide_context, signal_prelude::*, use_context, IntoView, Scope,
+    component, provide_context, signal_prelude::*, use_context, IntoView, Scope, IntoAttribute
 };
 use std::rc::Rc;
 
@@ -38,11 +38,13 @@ where
     // redirect on the server
     if let Some(redirect_fn) = use_context::<ServerRedirectFunction>(cx) {
         (redirect_fn.f)(&path);
+        ().into_view(cx)
     }
     // redirect on the client
     else {
         #[allow(unused)]
         let navigate = use_navigate(cx);
+        let fallback = format!("0;url='{path}'");
         #[cfg(any(feature = "csr", feature = "hydrate"))]
         leptos::request_animation_frame(move || {
             if let Err(e) = navigate(&path, options.unwrap_or_default()) {
@@ -58,6 +60,7 @@ where
                  just means that your root route is a redirect.)"
             );
         }
+        leptos::view!{ cx, <noscript><meta http-equiv="Refresh" content=fallback/></noscript> }.into_view(cx)
     }
 }
 
